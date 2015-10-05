@@ -368,6 +368,9 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         
         // Ignore packets not sent from me
         const struct sockaddr *hostAddrPtr = (const struct sockaddr *)[self.hostAddress bytes];
+        
+        if (!hostAddrPtr || hostAddrPtr == (__bridge const struct sockaddr *)([NSNull null])) return;
+        
         NSString *hostAddrIPString = [NSString stringWithFormat:@"%d.%d.%d.%d", (uint8_t)hostAddrPtr->sa_data[2],
                                                                                 (uint8_t)hostAddrPtr->sa_data[3],
                                                                                 (uint8_t)hostAddrPtr->sa_data[4],
