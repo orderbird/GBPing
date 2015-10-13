@@ -465,7 +465,6 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     @autoreleasepool {
         while (self.isPinging) {
             [self sendPing];
-            [NSThread sleepForTimeInterval:self.pingPeriod];
             
             NSTimeInterval runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
             NSTimeInterval time = 0;
