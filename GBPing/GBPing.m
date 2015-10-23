@@ -207,9 +207,10 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         
         if (!success) {
             //construct an error
-            NSDictionary *userInfo;
             NSError *error;
             
+            /*
+            NSDictionary *userInfo;
             if (streamError.domain == kCFStreamErrorDomainNetDB) {
                 userInfo = [NSDictionary dictionaryWithObjectsAndKeys:
                             [NSNumber numberWithInteger:streamError.error], kCFGetAddrInfoFailureKey,
@@ -219,7 +220,8 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             else {
                 userInfo = nil;
             }
-            error = [NSError errorWithDomain:(NSString *)kCFErrorDomainCFNetwork code:kCFHostErrorUnknown userInfo:userInfo];
+             */
+            error = [NSError errorWithDomain:(NSString *)kCFErrorDomainCFNetwork code:kCFHostErrorUnknown userInfo:nil];
             
             //clean up so far
             [self stop];
@@ -233,7 +235,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         
         //get the first IPv4 address
         Boolean resolved;
-        const struct sockaddr *addrPtr;
+        const struct sockaddr *addrPtr = nil;
         NSArray *addresses = (__bridge NSArray *)CFHostGetAddressing(_hostRef, &resolved);
         if (resolved && (addresses != nil)) {
             resolved = false;
@@ -269,22 +271,28 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         
         //set up socket
         int err = 0;
-        switch (addrPtr->sa_family) {
-            case AF_INET: {
-                self.socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
-                if (self.socket < 0) {
-                    err = errno;
-                }
-            } break;
-            case AF_INET6: {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    callback(NO, nil);
-                });
-                return;
-            } break;
-            default: {
-                err = EPROTONOSUPPORT;
-            } break;
+        
+        if (addrPtr != nil) {
+            switch (addrPtr->sa_family) {
+                case AF_INET: {
+                    self.socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+                    if (self.socket < 0) {
+                        err = errno;
+                    }
+                } break;
+                case AF_INET6: {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        callback(NO, nil);
+                    });
+                    return;
+                } break;
+                default: {
+                    err = EPROTONOSUPPORT;
+                } break;
+            }
+        }
+        else {
+            err = EPROTONOSUPPORT;
         }
         
         //couldnt setup socket
@@ -373,7 +381,10 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         // Ignore packets not sent from me
         const struct sockaddr *hostAddrPtr = (const struct sockaddr *)[self.hostAddress bytes];
         
-        if (!hostAddrPtr || hostAddrPtr == (__bridge const struct sockaddr *)([NSNull null])) return;
+        if (!hostAddrPtr || hostAddrPtr == (__bridge const struct sockaddr *)([NSNull null])) {
+            free(buffer);
+            return;
+        }
         
         NSString *hostAddrIPString = [NSString stringWithFormat:@"%d.%d.%d.%d", (uint8_t)hostAddrPtr->sa_data[2],
                                                                                 (uint8_t)hostAddrPtr->sa_data[3],
@@ -382,6 +393,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
        
         if (![hostAddrIPString isEqualToString:[[self class] sourceAddressInPacket:packet]]) {
             NSLog(@"\n\nsent with: %@ - recieved: %@ --> NOT MINE --> return", self.host, [[self class] sourceAddressInPacket:packet]);
+            free(buffer);
             return;
         }
         
