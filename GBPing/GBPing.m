@@ -199,14 +199,22 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         CFStreamError streamError;
         BOOL success;
         
-        _hostRef = CFHostCreateWithName(NULL, (__bridge CFStringRef)self.host);
+        @try {
+            _hostRef = CFHostCreateWithName(NULL, (__bridge CFStringRef)self.host);
+        }
+        @catch (NSException *exception) {}
         
         /*
          * CFHostCreateWithName will return a null result in certain cases.
          * CFHostStartInfoResolution will return YES if _hostRef is null.
          */
         if (_hostRef!=nil && _hostRef!=NULL && _hostRef) {
-            success = CFHostStartInfoResolution(_hostRef, kCFHostAddresses, &streamError);
+            @try {
+                success = CFHostStartInfoResolution(_hostRef, kCFHostAddresses, &streamError);
+            }
+            @catch (NSException *exception) {
+                success = NO;
+            }
         } else {
             success = NO;
         }        
@@ -242,7 +250,13 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         //get the first IPv4 address
         Boolean resolved;
         const struct sockaddr *addrPtr = nil;
-        NSArray *addresses = (__bridge NSArray *)CFHostGetAddressing(_hostRef, &resolved);
+        NSArray *addresses = nil;
+        
+        @try {
+            addresses = (__bridge NSArray *)CFHostGetAddressing(_hostRef, &resolved);
+        }
+        @catch (NSException *exception) {}
+        
         if (resolved && (addresses != nil)) {
             resolved = false;
             for (NSData *address in addresses) {
