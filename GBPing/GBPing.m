@@ -221,21 +221,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         
         if (!success) {
             //construct an error
-            NSError *error;
-            
-            /*
-            NSDictionary *userInfo;
-            if (streamError.domain == kCFStreamErrorDomainNetDB) {
-                userInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-                            [NSNumber numberWithInteger:streamError.error], kCFGetAddrInfoFailureKey,
-                            nil
-                            ];
-            }
-            else {
-                userInfo = nil;
-            }
-             */
-            error = [NSError errorWithDomain:(NSString *)kCFErrorDomainCFNetwork code:kCFHostErrorUnknown userInfo:nil];
+            NSError *error = [NSError errorWithDomain:(NSString *)kCFErrorDomainCFNetwork code:kCFHostErrorUnknown userInfo:nil];
             
             //clean up so far
             [self stop];
